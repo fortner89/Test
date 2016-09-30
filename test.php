@@ -1,7 +1,9 @@
 <?php
 require_once ('classes/distanceCalculator.class.php');
-$calc = new distanceCalculator('AIzaSyAlzwM5vJhI8yWYibpDzib4iyE0Tmx_7ik');
+$calc = new distanceCalculator('GOOGLE_MAPS_API_KEY');
 
-/*$res = $calc->getAllPoints();*/
+//Retrieve all datapoints from the database
+$res = $calc->getAllPoints();
 
-$res = $calc->calcStateDistance($locations, "km", 1);
+//Calculate miles traveled in state and produce a table with an output in miles
+$calc->calcStateDistance($res, "mi", 1);
