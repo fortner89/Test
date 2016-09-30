@@ -12,28 +12,29 @@ class distanceCalculator {
 		$this->db = connect();
 	}
 	
-	public function getPoints($offset = 0, $limit = 25, $order = "asc"){
-		$q = 'SELECT CONCAT(\'"\',lat,", ",lon,\'"\') as coords FROM track_points LIMIT 10';
-		$stmt = $this->db->prepare($q);
-		$stmt->execute();
-		$data = $stmt->fetchAll();
-		$dataStr = "";
-		for ($i=0; $i < count($data); $i++) { 
-			$dataStr .= $data[$i]['coords'].",";
-		}
-		$dataStr = substr_replace($dataStr, "", -1);
-		/*echo $dataStr;*/
-		return $dataStr;
+	public function getPoints($offset = 0, $limit = 25){
+		$q = 'SELECT lat, lon FROM track_points ORDER BY id ASC LIMIT :limit OFFSET :offset';
+        $stmt = $this->db->prepare($q);
+        $stmt->bindParam(':limit', $limit, \PDO::PARAM_STR);
+        $stmt->bindParam(':offset', $offset, \PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll();
+	}
+	
+	public function getAllPoints(){
+		$q = 'SELECT id, lat, lon FROM track_points ORDER BY id ASC';
+        $stmt = $this->db->prepare($q);
+        $stmt->execute();
+        return $stmt->fetchAll();
 	}
 
 	public function getGeoCode($lat, $lon){
-		$curl = curl_init();
 		$url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='.$lat.','.$lon.'&key='.$this->apiKey;
-		curl_setopt($curl, CURLOPT_URL, $url);
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
-		curl_setopt($curl, CURLOPT_CAINFO, getcwd() . "/cer/google.cer");
-		$result = curl_exec($curl);
+		curl_setopt($this->curl, CURLOPT_URL, $url);
+		curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, 2);
+		curl_setopt($this->curl, CURLOPT_CAINFO, getcwd() . "/cer/google.cer");
+		$result = curl_exec($this->curl);
 		return json_decode($result, true);
 	}
 
@@ -54,6 +55,33 @@ class distanceCalculator {
 				}
 				
 			}
+		}
+	}
+
+	public function getDirections($coords){
+		$dest = end($coords);
+		if(count($coords) > 2){
+			$waypoints = "&waypoints=";
+			for ($i=1; $i < (count($coords) - 1); $i++) { 
+				$waypoints .= $coords[$i]['lat'].",".$coords[$i]['lon']."|";
+			}
+			$waypoints = substr($waypoints, 0, -1);
+		}
+		else{
+			$waypoints = "";
+		}
+		$url = 'https://maps.googleapis.com/maps/api/directions/json?origin='.$coords[0]['lat'].','.$coords[0]['lon'].'&destination='.$dest['lat'].','.$dest['lon'].$waypoints.'&key='.$this->key;
+		curl_setopt($this->curl, CURLOPT_URL, $url);
+		curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, 2);
+		curl_setopt($this->curl, CURLOPT_CAINFO, getcwd() . "/cer/google.cer");
+		$result = curl_exec($this->curl);
+		return json_decode($result, true);
+	}
+
+	public function calcStateDistance($coords){
+		for ($i=0; $i < count($coords); $i++) { 
+			# code...
 		}
 	}
 }
